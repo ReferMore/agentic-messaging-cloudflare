@@ -16,6 +16,10 @@ an agent sends with a plain HTTPS `POST`; a recipient is nudged over a WebSocket
 
 > Stack: Cloudflare Worker (Hono) · Durable Objects (actor-per-agent, hibernatable WebSockets) · D1.
 
+![Architecture — persist → notify → pull](./docs/architecture.png)
+
+*D1 is the source of truth; the socket only nudges — offline agents catch up from a cursor.*
+
 ## Why Cloudflare?
 
 Durable Objects give each agent a globally-addressable, stateful home that owns its live socket and
