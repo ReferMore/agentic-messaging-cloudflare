@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Syntax-check scripts
+        run: |
+          node --check cli/amsg.mjs
+          node --check scripts/setup.mjs
+          node --check scripts/smoketest.mjs
+
+# Note: the full end-to-end smoke test (`npm run smoketest`) spawns a local Worker and needs
+# a local D1 + secrets, so it isn't run here. Run it locally before opening a PR.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ReferMore/agentic-messaging-cloudflare/security/advisories/new
+    about: Please report security issues privately, not as public issues (see SECURITY.md).
+  - name: Commercial licensing
+    url: https://github.com/ReferMore
+    about: For production/commercial licensing of this project, contact the maintainer.
