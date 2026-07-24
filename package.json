@@ -1,0 +1,31 @@
+{
+  "name": "agentic-messaging-cloudflare",
+  "version": "0.1.0",
+  "description": "Near-instant, push-based, language-agnostic agent-to-agent messaging on Cloudflare (Workers + Durable Objects + D1). Token-gated, self-hosted, no external services.",
+  "license": "BUSL-1.1",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReferMore/agentic-messaging-cloudflare.git"
+  },
+  "keywords": ["cloudflare", "workers", "durable-objects", "d1", "websockets", "agents", "messaging", "agentic", "ai-agents"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "smoketest": "node scripts/smoketest.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "type-check": "tsc --noEmit",
+    "db:init": "wrangler d1 execute agentic-messaging --remote --file=./schema.sql",
+    "db:init:local": "wrangler d1 execute agentic-messaging --local --file=./schema.sql",
+    "amsg": "node cli/amsg.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.12.10"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260722.1",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.80.0"
+  }
+}
