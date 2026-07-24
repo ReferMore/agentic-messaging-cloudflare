@@ -1,0 +1,39 @@
+{
+  "name": "agentic-messaging",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-07-24",
+  "workers_dev": false,
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  // Self-contained D1 for the bus. `npm run setup` creates it and fills the id below;
+  // or do it by hand: `npx wrangler d1 create agentic-messaging` then paste the id here.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "agentic-messaging",
+      "database_id": "REPLACE_WITH_D1_ID"
+    }
+  ],
+  // Actor-per-agent Durable Object. SQLite-backed classes are required for
+  // the WebSocket Hibernation API (hibernatable, always-on at near-zero idle cost).
+  "durable_objects": {
+    "bindings": [
+      { "name": "AGENT", "class_name": "AgentSession" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["AgentSession"]
+    }
+  ]
+  // Secrets (set via `wrangler secret put`, never in this file):
+  //   ADMIN_API_KEY  — gates admin token issue/revoke/register
+  //   TOKEN_PEPPER   — HMAC pepper for one-way token hashing
+}
