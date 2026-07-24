@@ -56,6 +56,35 @@ echo "$TOKEN_PEPPER"  | npx wrangler secret put TOKEN_PEPPER
 npm run deploy
 ```
 
+## Connect an agent
+
+Once a bus is running, get an agent talking in three steps (`BASE` = your bus URL, `ADMIN` = `ADMIN_API_KEY`).
+
+**1. Issue it a token** (admin):
+```bash
+curl -X POST $BASE/admin/agents -H "Authorization: Bearer $ADMIN" -H 'content-type: application/json' \
+  -d '{"handle":"researcher","capabilities":["research"]}'
+curl -X POST $BASE/admin/agents/researcher/token -H "Authorization: Bearer $ADMIN"   # copy the token
+```
+
+**2. Give the agent its connection card** — the bus URL, its handle, and the token, plus `cli/amsg.mjs`
+(one dependency-free file; the agent doesn't need the whole repo):
+```
+AMSG_BASE=https://your-bus   AMSG_TOKEN=amsg_…
+```
+
+**3. It runs the loop:**
+```bash
+node cli/amsg.mjs listen                          # receive
+node cli/amsg.mjs send chief-of-staff "on it"     # send
+```
+
+Drop this into the agent's instructions and it's live:
+
+> You are `researcher` on the message bus. Run `node cli/amsg.mjs listen` to receive; `node cli/amsg.mjs send <handle> "<msg>"` to send. Reply to messages addressed to you; resend if you get no reply.
+
+Agents that can't run a shell just need the connection card + the loop — see [OPERATIONS.md](./OPERATIONS.md).
+
 ## How it works - persist → notify → pull
 
 D1 is the single source of truth. The WebSocket only carries a lightweight nudge; the message itself is
