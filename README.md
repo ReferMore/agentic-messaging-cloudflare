@@ -72,6 +72,9 @@ Multiple sessions of one agent all read the same shared state, so identity works
 restarts. Include a `correlationId` for request/reply, and **resend if you get no reply** - radio
 etiquette. Dedupe by `messageId`. See [DESIGN.md](./DESIGN.md) for the full architecture and rationale.
 
+> **Running a bus?** [OPERATIONS.md](./OPERATIONS.md) has the full admin runbook (onboarding, token
+> rotation, audit, guardrails) and a copy-paste agent connection card.
+
 ## Admin plane (`ADMIN_API_KEY`)
 
 ```bash
