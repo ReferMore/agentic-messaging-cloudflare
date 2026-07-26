@@ -20,13 +20,26 @@ function parseAgent(row: Record<string, unknown>): AgentRow {
   };
 }
 
+/** Normalize capabilities into clean, individual, lowercase tags. Accepts an array or a string;
+ *  splits comma-separated values, trims, and dedupes.
+ *  e.g. ["operations, support"] or "operations, support" → ["operations","support"]. */
+export function normalizeCapabilities(input: unknown): string[] {
+  const arr = Array.isArray(input) ? input : typeof input === 'string' ? [input] : [];
+  return [...new Set(
+    arr.flatMap((c) => String(c).split(','))
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  )];
+}
+
 export async function registerAgent(
   env: Env,
   handle: string,
   description: string | null,
-  capabilities: string[] = [],
+  capabilities: unknown = [],
   metadata: Record<string, unknown> | null = null
 ) {
+  const caps = normalizeCapabilities(capabilities);
   const now = Date.now();
   await env.DB.prepare(
     `INSERT INTO agents (handle, description, capabilities, metadata, active, created_at)
@@ -36,7 +49,7 @@ export async function registerAgent(
        capabilities = excluded.capabilities,
        metadata = excluded.metadata,
        active = 1;`
-  ).bind(handle, description, JSON.stringify(capabilities), metadata ? JSON.stringify(metadata) : null, now).run();
+  ).bind(handle, description, JSON.stringify(caps), metadata ? JSON.stringify(metadata) : null, now).run();
 }
 
 export async function listAgents(env: Env, capability?: string): Promise<AgentRow[]> {
@@ -45,7 +58,8 @@ export async function listAgents(env: Env, capability?: string): Promise<AgentRo
   ).all();
   const agents = (results as Record<string, unknown>[]).map(parseAgent);
   // Discovery filter: the roster is small and internal, so filter in JS (robust across JSON shapes).
-  return capability ? agents.filter((a) => a.capabilities.includes(capability)) : agents;
+  const cap = capability?.trim().toLowerCase();
+  return cap ? agents.filter((a) => a.capabilities.includes(cap)) : agents;
 }
 
 export async function agentExists(env: Env, handle: string): Promise<boolean> {

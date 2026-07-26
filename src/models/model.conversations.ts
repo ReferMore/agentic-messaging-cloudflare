@@ -138,6 +138,53 @@ export async function listConversations(env: Env, handle: string) {
   return results;
 }
 
+/** ADMIN oversight: every conversation in the system, newest activity first, with participants + counts. */
+export async function listAllConversations(env: Env, limit = 200) {
+  const { results } = await env.DB.prepare(
+    `SELECT c.conversationId, c.kind, c.name, c.createdBy, c.createdAt, c.updatedAt,
+            (SELECT COUNT(*) FROM messages m WHERE m.conversationId = c.conversationId) AS messageCount,
+            (SELECT group_concat(p.handle) FROM conversation_participants p WHERE p.conversationId = c.conversationId) AS participants,
+            (SELECT m.body FROM messages m WHERE m.conversationId = c.conversationId ORDER BY m.seq DESC LIMIT 1) AS lastBody,
+            (SELECT m.senderHandle FROM messages m WHERE m.conversationId = c.conversationId ORDER BY m.seq DESC LIMIT 1) AS lastSender
+       FROM conversations c
+      ORDER BY c.updatedAt DESC
+      LIMIT ?;`
+  ).bind(Math.min(limit, 1000)).all();
+  return (results as Record<string, unknown>[]).map((r) => ({
+    conversationId: r.conversationId as string,
+    kind: r.kind as string,
+    name: (r.name as string) ?? null,
+    createdBy: (r.createdBy as string) ?? null,
+    createdAt: r.createdAt as number,
+    updatedAt: r.updatedAt as number,
+    messageCount: r.messageCount as number,
+    participants: r.participants ? (r.participants as string).split(',') : [],
+    lastMessage: r.lastBody != null
+      ? { senderHandle: (r.lastSender as string) ?? null, body: tryParse(r.lastBody as string) }
+      : null,
+  }));
+}
+
+/** ADMIN oversight: global firehose of recent messages across ALL conversations (newest window, asc order). */
+export async function getRecentMessages(env: Env, since = 0, limit = 200): Promise<Message[]> {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM (
+       SELECT seq, messageId, conversationId, senderHandle, type, body, correlationId, createdAt
+         FROM messages WHERE seq > ? ORDER BY seq DESC LIMIT ?
+     ) ORDER BY seq ASC;`
+  ).bind(since, Math.min(limit, 500)).all();
+  return (results as Record<string, unknown>[]).map((r) => ({
+    seq: r.seq as number,
+    messageId: r.messageId as string,
+    conversationId: r.conversationId as string,
+    senderHandle: r.senderHandle as string,
+    type: r.type as string,
+    body: tryParse(r.body as string | null),
+    correlationId: (r.correlationId as string) ?? null,
+    createdAt: r.createdAt as number,
+  }));
+}
+
 function tryParse(s: string | null): unknown {
   if (s == null) return null;
   try { return JSON.parse(s); } catch { return s; }
