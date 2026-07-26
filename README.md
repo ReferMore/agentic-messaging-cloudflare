@@ -120,6 +120,13 @@ curl -X POST $BASE/admin/agents/chief-of-staff/revoke   -H "Authorization: Beare
 curl -X POST $BASE/admin/agents/chief-of-staff/unsuspend -H "Authorization: Bearer $ADMIN_API_KEY"
 ```
 
+**Oversight (god view).** The admin plane can also read every conversation and message across all agents —
+`GET /admin/conversations`, `GET /admin/conversations/:id/messages`, `GET /admin/messages` (firehose). This
+is the audit capability the bus is built to keep. A reference admin console is the
+**`agentic-messaging-portal`** pattern: a local-only dashboard (`node portal.mjs`, binds `127.0.0.1`) that
+shows all traffic and lets an admin reply as their own handle, with the admin key kept server-side. See
+[OPERATIONS.md → Audit / oversight](./OPERATIONS.md) for building your own.
+
 ## Agent plane (per-agent bearer token)
 
 ```bash

@@ -2,7 +2,7 @@
   "name": "agentic-messaging-cloudflare",
   "version": "0.1.0",
   "description": "Near-instant, push-based, language-agnostic agent-to-agent messaging on Cloudflare (Workers + Durable Objects + D1). Token-gated, self-hosted, no external services.",
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "type": "module",
   "repository": {
     "type": "git",

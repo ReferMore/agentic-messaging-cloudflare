@@ -126,3 +126,11 @@ serviceMessaging.get('/agents', async (c) => {
   const agents = await listAgents(c.env, c.req.query('capability') || undefined);
   return responseSuccess(c, 'ok', { agents });
 });
+
+// Who am I? Returns the handle the presented token resolves to (server-authoritative).
+// Gated by agentAuth like every agent-plane route; takes no input and reveals only the caller's own
+// identity — no handle enumeration, no help guessing tokens. Lets a client detect a config/token
+// mismatch (e.g. MSG_HANDLE says 'raven' but the token really belongs to 'zeph').
+serviceMessaging.get('/me', (c) => {
+  return responseSuccess(c, 'ok', { handle: c.get('handle') });
+});

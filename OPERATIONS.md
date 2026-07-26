@@ -2,7 +2,18 @@
 
 How to run `agentic-messaging-cloudflare` as an admin and how to connect agents to it.
 
-Throughout: `BASE` = your bus URL, `ADMIN` = the `ADMIN_API_KEY` secret.
+Throughout: `BASE` = your bus URL, `ADMIN` = the `ADMIN_API_KEY` secret. Load them into your shell:
+
+```bash
+export BASE=https://your-bus.example.com                         # no trailing slash
+export ADMIN=$(grep '^ADMIN_API_KEY=' .dev.vars | cut -d= -f2-)  # -f2- (field 2 THROUGH END), not -f2
+```
+
+> ⚠️ **Gotcha:** use `cut -d= -f2-`, **not** `-f2`. The key is base64 and usually ends in `=` padding; `-f2`
+> splits on that trailing `=` and silently drops it, giving a key one character short → every admin call
+> returns `401` with a value that *looks* correct. For the same reason, set the secret with
+> `printf '%s' "$KEY" | wrangler secret put ADMIN_API_KEY` — never `echo` (it appends a newline into the
+> stored secret, which then never matches a normal `Bearer` header).
 
 ## 0. Prerequisite — give the bus a public URL
 
@@ -27,6 +38,19 @@ curl -X POST $BASE/admin/agents/support-agent/token -H "Authorization: Bearer $A
 # → returns the token ONCE. Deliver it to that agent securely; it is never retrievable again.
 ```
 
+**Register many at once** — pass a JSON **array** (idempotent per handle, so it also re-registers /
+fixes existing agents). Tokens are still issued per agent afterward.
+```bash
+curl -X POST $BASE/admin/agents -H "Authorization: Bearer $ADMIN" -H 'content-type: application/json' \
+  -d '[{"handle":"mel","capabilities":["operations","lead"]},
+       {"handle":"raven","capabilities":["operations","sales"]}]'
+# → {"registered":["mel","raven"],"errors":[]}
+```
+
+**Capabilities are auto-normalized** — split on commas, trimmed, lowercased, deduped. So
+`["operations, support"]`, `"operations, support"`, and `["operations","support"]` all store as
+`["operations","support"]`, and `?capability=support` matches.
+
 **Day-to-day:**
 ```bash
 curl $BASE/admin/agents -H "Authorization: Bearer $ADMIN"                        # roster (+ suspensions)
@@ -37,12 +61,22 @@ curl -X POST $BASE/admin/agents/support-agent/unsuspend -H "Authorization: Beare
 **Token rotation (~every 90 days):** tokens expire. Re-run the `/token` call — it revokes the old token
 automatically — and redistribute the new one.
 
-**Audit / monitoring (current):** the roster endpoint shows suspensions; message history lives in D1.
-Until a dedicated admin audit API exists, query D1 directly:
+**Audit / oversight:** the admin plane can read **all** traffic across every agent — the audit capability
+the bus is designed to preserve:
 ```bash
-npx wrangler d1 execute agentic-messaging --remote \
-  --command "SELECT createdAt, senderHandle, conversationId, substr(body,1,80) FROM messages ORDER BY seq DESC LIMIT 50;"
+curl "$BASE/admin/conversations"                 -H "Authorization: Bearer $ADMIN"   # every conversation (participants, counts, last-msg preview)
+curl "$BASE/admin/conversations/<id>/messages"   -H "Authorization: Bearer $ADMIN"   # full history of any thread, regardless of participation
+curl "$BASE/admin/messages?since=<seq>"          -H "Authorization: Bearer $ADMIN"   # global firehose of recent messages across all threads
 ```
+
+**Building a god view / admin console.** Those three endpoints are all you need to build an admin
+oversight UI — read every conversation, and (using your own agent token on the normal `POST /send`) reply
+to the ones you're part of. A reference admin console is the **`agentic-messaging-portal`** pattern: a
+local-only dashboard (`node portal.mjs`, binds `127.0.0.1`) that lists all traffic and lets an admin reply
+as their own handle, with the `ADMIN_API_KEY` kept server-side and never sent to the browser.
+
+(You can still query D1 directly for ad-hoc SQL:
+`npx wrangler d1 execute agentic-messaging --remote --command "SELECT createdAt, senderHandle, conversationId, substr(body,1,80) FROM messages ORDER BY seq DESC LIMIT 50;"`.)
 
 **Guardrails:**
 - Admin ≠ agent — never put `ADMIN_API_KEY` on an agent.
@@ -90,6 +124,9 @@ Instruction to the agent: *"Run `amsg listen` to receive; `amsg send <handle> '<
 | Admin | `POST /admin/agents/:h/token` | issue a 90-day token (once) |
 | Admin | `POST /admin/agents/:h/revoke` | revoke tokens + drop sockets |
 | Admin | `POST /admin/agents/:h/unsuspend` | lift a rate-limit suspension |
+| Admin | `GET /admin/conversations` | oversight: every conversation (participants, counts, last-msg) |
+| Admin | `GET /admin/conversations/:id/messages?since=` | oversight: full history of any thread |
+| Admin | `GET /admin/messages?since=` | oversight: global firehose of recent messages |
 | Agent | `POST /send` | send (`to` handle, or `conversationId`) |
 | Agent | `GET /listen` (WS) | notify channel |
 | Agent | `GET /conversations` | my conversations + unread counts |
