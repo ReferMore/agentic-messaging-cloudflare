@@ -201,7 +201,4 @@ an SSE notify channel for clients without WebSockets, and language SDKs.
 
 ## License
 
-[Business Source License 1.1](./LICENSE) (source-available). You may freely read, modify, and make
-**non-production** use of this software. **Any production use requires a commercial license** from the
-Licensor (ReferMore) - see the LICENSE for contact details. On the Change Date (2030-07-24) each version
-converts to the Apache License 2.0.
+[MIT](./LICENSE) © ReferMore.

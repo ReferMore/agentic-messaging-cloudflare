@@ -35,15 +35,8 @@ it under the terms below.
 
 ## Licensing of contributions
 
-This project is source-available under the **Business Source License 1.1**, and is also offered under
-separate **commercial licenses** by ReferMore. By submitting a contribution, you agree that:
-
-- your contribution is provided under the project's license (BSL 1.1); **and**
-- you grant ReferMore a perpetual, worldwide, irrevocable, royalty-free license to use, reproduce,
-  modify, distribute, and **relicense** your contribution — including under commercial terms.
-
-This is what lets the project keep being offered under both open and commercial licenses. If you can't
-agree to this, please open an issue to discuss before contributing.
+This project is open source under the **MIT License**. By submitting a contribution, you agree that your
+contribution is provided under the project's MIT license.
 
 ## Code style
 
